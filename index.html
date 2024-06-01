@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERC20 QOM Token Deployer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Deploy Your ERC20 Token on QOM</h1>
+        <form id="deployForm">
+            <div class="form-group">
+                <label for="tokenName">Token Name:</label>
+                <input type="text" id="tokenName" required>
+            </div>
+            <div class="form-group">
+                <label for="tokenSymbol">Token Symbol:</label>
+                <input type="text" id="tokenSymbol" required>
+            </div>
+            <div class="form-group">
+                <label for="totalSupply">Total Supply:</label>
+                <input type="number" id="totalSupply" required>
+            </div>
+            <button type="submit">Deploy Token</button>
+        </form>
+        <p>Fee of 350,000,000 QOM is required to deploy a token</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.x/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@metamask/detect-provider@latest"></script>
+    <script src="app.js"></script>
+</body>
+</html>
