@@ -1,3 +1,3 @@
 # ERC20 Deployer
 
-Web app to deploy an ERC20 tokens
+Web app to deploy ERC20 tokens
