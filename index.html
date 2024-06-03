@@ -3,12 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERC20 QOM Token Deployer</title>
+    <title>ERC20 Token Deployer</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        #codeBlock {
+            width: 100%;
+            height: 300px;
+            overflow: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+            white-space: pre;
+            font-family: monospace;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Deploy Your ERC20 Token on QOM</h1>
+        <h1>Deploy Your ERC20 Token</h1>
         <form id="deployForm">
             <div class="form-group">
                 <label for="tokenName">Token Name:</label>
@@ -24,11 +36,246 @@
             </div>
             <button type="submit">Deploy Token</button>
         </form>
-        <p>Fee of 350,000,000 QOM is required to deploy a token</p>
+        <p>Use this code for verification or deploy yourself for free outside of the deployer.</p>
+        <div id="codeBlock"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.x/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@metamask/detect-provider@latest"></script>
-    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const deployForm = document.getElementById('deployForm');
+            const feeAmount = '350000000'; // Fee amount in ETH
+            const feeRecipient = '0x754627699368b3549b27C97C8CB767C931D2152A'; 
+
+            // Add the Solidity code block to the HTML
+            const codeBlock = document.getElementById('codeBlock');
+            codeBlock.textContent = `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
+    }
+
+    function _msgData() internal view virtual returns (bytes calldata) {
+        return msg.data;
+    }
+}
+
+interface IERC20 {
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address to, uint256 amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+}
+
+interface IERC20Metadata is IERC20 {
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
+}
+
+contract ERC20 is Context, IERC20, IERC20Metadata {
+    mapping(address => uint256) private _balances;
+    mapping(address => mapping(address => uint256)) private _allowances;
+    uint256 private _totalSupply;
+    string private _name;
+    string private _symbol;
+
+    constructor(string memory name_, string memory symbol_) {
+        _name = name_;
+        _symbol = symbol_;
+    }
+
+    function name() public view virtual override returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view virtual override returns (string memory) {
+        return _symbol;
+    }
+
+    function decimals() public view virtual override returns (uint8) {
+        return 18;
+    }
+
+    function totalSupply() public view virtual override returns (uint256) {
+        return _totalSupply;
+    }
+
+    function balanceOf(address account) public view virtual override returns (uint256) {
+        return _balances[account];
+    }
+
+    function transfer(address to, uint256 amount) public virtual override returns (bool) {
+        address owner = _msgSender();
+        _transfer(owner, to, amount);
+        return true;
+    }
+
+    function allowance(address owner, address spender) public view virtual override returns (uint256) {
+        return _allowances[owner][spender];
+    }
+
+    function approve(address spender, uint256 amount) public virtual override returns (bool) {
+        address owner = _msgSender();
+        _approve(owner, spender, amount);
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
+        address spender = _msgSender();
+        _spendAllowance(from, spender, amount);
+        _transfer(from, to, amount);
+        return true;
+    }
+
+    function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
+        address owner = _msgSender();
+        _approve(owner, spender, allowance(owner, spender) + addedValue);
+        return true;
+    }
+
+    function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
+        address owner = _msgSender();
+        uint256 currentAllowance = allowance(owner, spender);
+        require(currentAllowance >= subtractedValue, "ERC20: decreased allowance below zero");
+        unchecked {
+            _approve(owner, spender, currentAllowance - subtractedValue);
+        }
+
+        return true;
+    }
+
+    function _transfer(address from, address to, uint256 amount) internal virtual {
+        require(from != address(0), "ERC20: transfer from the zero address");
+        require(to != address(0), "ERC20: transfer to the zero address");
+
+        uint256 fromBalance = _balances[from];
+        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+        unchecked {
+            _balances[from] = fromBalance - amount;
+        }
+        _balances[to] += amount;
+
+        emit Transfer(from, to, amount);
+    }
+
+    function _mint(address account, uint256 amount) internal virtual {
+        require(account != address(0), "ERC20: mint to the zero address");
+
+        _totalSupply += amount;
+        _balances[account] += amount;
+        emit Transfer(address(0), account, amount);
+    }
+
+    function _burn(address account, uint256 amount) internal virtual {
+        require(account != address(0), "ERC20: burn from the zero address");
+
+        uint256 accountBalance = _balances[account];
+        require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
+        unchecked {
+            _balances[account] = accountBalance - amount;
+        }
+        _totalSupply -= amount;
+
+        emit Transfer(account, address(0), amount);
+    }
+
+    function _approve(address owner, address spender, uint256 amount) internal virtual {
+        require(owner != address(0), "ERC20: approve from the zero address");
+        require(spender != address(0), "ERC20: approve to the zero address");
+
+        _allowances[owner][spender] = amount;
+        emit Approval(owner, spender, amount);
+    }
+
+    function _spendAllowance(address owner, address spender, uint256 amount) internal virtual {
+        uint256 currentAllowance = allowance(owner, spender);
+        if (currentAllowance != type(uint256).max) {
+            require(currentAllowance >= amount, "ERC20: insufficient allowance");
+            unchecked {
+                _approve(owner, spender, currentAllowance - amount);
+            }
+        }
+    }
+}
+
+contract ERC20Token is ERC20 {
+    constructor(string memory name, string memory symbol, uint256 initialSupply) ERC20(name, symbol) {
+        _mint(msg.sender, initialSupply * (10 ** uint256(decimals())));
+    }
+}
+`;
+
+            deployForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                // Retrieve form values
+                const tokenName = document.getElementById('tokenName').value;
+                const tokenSymbol = document.getElementById('tokenSymbol').value;
+                const totalSupply = document.getElementById('totalSupply').value;
+
+                // Check if MetaMask is installed
+                if (typeof window.ethereum !== 'undefined') {
+                    try {
+                        await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+                        const web3 = new Web3(window.ethereum);
+
+                        const erc20TokenContractData = await fetch('ERC20Token.json').then(response => response.json());
+                        const erc20TokenContract = new web3.eth.Contract(erc20TokenContractData.abi);
+
+                        // Get the user's account
+                        const accounts = await web3.eth.getAccounts();
+                        const account = accounts[0];
+
+                        // Convert the fee amount to Wei
+                        const feeAmountInWei = web3.utils.toWei(feeAmount, 'ether');
+
+                        // Send the fee transaction
+                        await web3.eth.sendTransaction({
+                            from: account,
+                            to: feeRecipient,
+                            value: feeAmountInWei
+                        });
+
+                        // Estimate gas for the contract deployment
+                        const gas = await erc20TokenContract.deploy({
+                            data: erc20TokenContractData.bytecode,
+                            arguments: [tokenName, tokenSymbol, totalSupply]
+                        }).estimateGas({ from: account });
+
+                        // Deploy the contract
+                        erc20TokenContract.deploy({
+                            data: erc20TokenContractData.bytecode,
+                            arguments: [tokenName, tokenSymbol, totalSupply]
+                        })
+                        .send({
+                            from: account,
+                            gas: gas
+                        })
+                        .on('receipt', (receipt) => {
+                            alert(`Token deployed successfully! Contract Address: ${receipt.contractAddress}`);
+                        })
+                        .on('error', (error) => {
+                            alert(`Failed to deploy token: ${error.message}`);
+                        });
+
+                    } catch (error) {
+                        console.error('Error:', error.message);
+                        alert(`Error: ${error.message}`);
+                    }
+                } else {
+                    alert('Please install MetaMask to use this feature.');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
